@@ -1,3 +1,4 @@
+import re
 from flask import Flask, jsonify, request
 import json
 from datetime import datetime
@@ -58,6 +59,34 @@ def insert_user(collection):
         results = db[collection].find(args)
         response = jsonify(list(results))
         return add_headers(response)
+
+
+@app.route("/register", methods=['PUT'])
+def register():
+    if request.method == 'PUT':
+        body = dict(request.get_json(force=True))
+        email = body.get('email')
+        password = body.get('password')
+        if not re.match("[^@]+@[^@]+\.[^@]+", email):
+            return add_headers(jsonify({"status": "KO", "message": "invalid email format"}))
+        if password in ['', None]:
+            return add_headers(jsonify({"status": "KO", "message": "invalid password"}))
+        db = get_db()
+        if db.users.find_one({"email": email}):
+            return add_headers(jsonify({"status": "KO", "message": "email already exists"}))
+        result = db.users.insert_one({"email": email, "password": password, "createdAt": datetime.now()})
+        return add_headers(jsonify({"status": "OK", "token": result.inserted_id}))
+
+
+@app.route("/authenticate", methods=['POST'])
+def authenticate():
+    if request.method == 'POST':
+        db = get_db()
+        body = dict(request.get_json(force=True))
+        email = body.get('email')
+        password = body.get('password')
+        result = db.users.find_one(body)
+
 
 
 if __name__ == "__main__":
