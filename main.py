@@ -85,8 +85,10 @@ def authenticate():
         body = dict(request.get_json(force=True))
         email = body.get('email')
         password = body.get('password')
-        result = db.users.find_one(body)
-
+        result = db.users.find_one({"email": email, "password": password})
+        if result is None:
+            return add_headers(jsonify({"status": "KO"}))
+        return add_headers(jsonify({"token": result.get('_id')}))
 
 
 if __name__ == "__main__":
