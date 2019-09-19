@@ -71,11 +71,15 @@ def register():
             return add_headers(jsonify({"status": "KO", "message": "invalid email format"}))
         if password in ['', None]:
             return add_headers(jsonify({"status": "KO", "message": "invalid password"}))
+
+        email = email.lower()
         db = get_db()
         if db.users.find_one({"email": email}):
             return add_headers(jsonify({"status": "KO", "message": "email already exists"}))
         result = db.users.insert_one({"email": email, "password": password, "createdAt": datetime.now()})
-        return add_headers(jsonify({"status": "OK", "token": result.inserted_id}))
+        user_id = result.inserted_id
+        db.lovers.insert_one({"user_id": user_id, "configured": False})
+        return add_headers(jsonify({"status": "OK", "token": user_id}))
 
 
 @app.route("/authenticate", methods=['POST'])
@@ -84,6 +88,8 @@ def authenticate():
         db = get_db()
         body = dict(request.get_json(force=True))
         email = body.get('email')
+        if email is not None:
+            email = email.lower()
         password = body.get('password')
         result = db.users.find_one({"email": email, "password": password})
         if result is None:
