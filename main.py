@@ -100,5 +100,22 @@ def authenticate():
         return add_headers(jsonify({"token": result.get('token')}))
 
 
+@app.route("/myProfile", methods=['GET'])
+def my_profile():
+    if request.method == 'GET':
+        db = get_db()
+        args = dict(request.args)
+        token = args.get('token')
+        if token is None:
+            return add_headers(jsonify({"status": 'KO'}))
+        user = db.users.find_one({"token": token})
+        if user:
+            user_id = str(user.get('_id'))
+            lover = db.lovers.find_one({'userId': user_id})
+            if lover:
+                return add_headers(jsonify(lover))
+        return add_headers(jsonify({"status": "KO"}))
+
+
 if __name__ == "__main__":
     app.run(host='0.0.0.0')
