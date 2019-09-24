@@ -1,4 +1,6 @@
+import random
 import re
+import hashlib
 from flask import Flask, jsonify, request
 import json
 from datetime import datetime
@@ -25,15 +27,15 @@ def get_db() -> pymongo.database.Database:
     return client.lovocco
 
 
-@app.route("/<string:collection>/<string:index>", methods=['GET', 'PUT'])
-def user(collection, index):
-    if request.method == 'GET':
-        db = get_db()
-        return add_headers(jsonify(db[collection].find_one({'_id': ObjectId(index)})))
-    elif request.method == 'PUT':
-        db = get_db()
-        result = db[collection].update_one({'_id': ObjectId(index)}, {"$set": request.get_json(force=True)}, upsert=False)
-        return add_headers(jsonify({'status': 'OK', 'count': result.modified_count}))
+# @app.route("/<string:collection>/<string:index>", methods=['GET', 'PUT'])
+# def user(collection, index):
+#     if request.method == 'GET':
+#         db = get_db()
+#         return add_headers(jsonify(db[collection].find_one({'_id': ObjectId(index)})))
+#     elif request.method == 'PUT':
+#         db = get_db()
+#         result = db[collection].update_one({'_id': ObjectId(index)}, {"$set": request.get_json(force=True)}, upsert=False)
+#         return add_headers(jsonify({'status': 'OK', 'count': result.modified_count}))
 
 
 def add_headers(response):
@@ -41,24 +43,24 @@ def add_headers(response):
     return response
 
 
-@app.route("/<string:collection>", methods=['POST', 'GET', 'PUT'])
-def insert_user(collection):
-    if request.method == 'POST':
-        db = get_db()
-        body = request.get_json(force=True)
-        result = db[collection].insert_one(body)
-        return add_headers(jsonify({'_id': result.inserted_id, 'status': 'OK'}))
-    if request.method == 'PUT':
-        db = get_db()
-        body = request.get_json(force=True)
-        result = db[collection].insert_one(body)
-        return add_headers(jsonify({'_id': result.inserted_id, 'status': 'OK'}))
-    if request.method == 'GET':
-        db = get_db()
-        args = dict(request.args)
-        results = db[collection].find(args)
-        response = jsonify(list(results))
-        return add_headers(response)
+# @app.route("/<string:collection>", methods=['POST', 'GET', 'PUT'])
+# def insert_user(collection):
+#     if request.method == 'POST':
+#         db = get_db()
+#         body = request.get_json(force=True)
+#         result = db[collection].insert_one(body)
+#         return add_headers(jsonify({'_id': result.inserted_id, 'status': 'OK'}))
+#     if request.method == 'PUT':
+#         db = get_db()
+#         body = request.get_json(force=True)
+#         result = db[collection].insert_one(body)
+#         return add_headers(jsonify({'_id': result.inserted_id, 'status': 'OK'}))
+#     if request.method == 'GET':
+#         db = get_db()
+#         args = dict(request.args)
+#         results = db[collection].find(args)
+#         response = jsonify(list(results))
+#         return add_headers(response)
 
 
 @app.route("/register", methods=['PUT'])
@@ -76,10 +78,11 @@ def register():
         db = get_db()
         if db.users.find_one({"email": email}):
             return add_headers(jsonify({"status": "KO", "message": "email already exists"}))
-        result = db.users.insert_one({"email": email, "password": password, "createdAt": datetime.now()})
+        token = hashlib.sha256(email + password + str(random.choice(9999)))
+        result = db.users.insert_one({"email": email, "password": password, "token": token, "createdAt": datetime.now()})
         user_id = result.inserted_id
         db.lovers.insert_one({"userId": user_id, "configured": False})
-        return add_headers(jsonify({"status": "OK", "token": user_id}))
+        return add_headers(jsonify({"status": "OK", "token": token}))
 
 
 @app.route("/authenticate", methods=['POST'])
@@ -94,7 +97,7 @@ def authenticate():
         result = db.users.find_one({"email": email, "password": password})
         if result is None:
             return add_headers(jsonify({"status": "KO"}))
-        return add_headers(jsonify({"token": result.get('_id')}))
+        return add_headers(jsonify({"token": result.get('token')}))
 
 
 if __name__ == "__main__":
