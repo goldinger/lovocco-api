@@ -78,7 +78,7 @@ def register():
         db = get_db()
         if db.users.find_one({"email": email}):
             return add_headers(jsonify({"status": "KO", "message": "email already exists"}))
-        token = hashlib.sha256(email + password + str(random.choice(9999)))
+        token = hashlib.sha256((email + password + str(random.randint(1, 9999))).encode('utf-8')).hexdigest()
         result = db.users.insert_one({"email": email, "password": password, "token": token, "createdAt": datetime.now()})
         user_id = result.inserted_id
         db.lovers.insert_one({"userId": user_id, "configured": False})
