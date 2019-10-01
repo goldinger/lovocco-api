@@ -111,7 +111,7 @@ def my_profile():
         user = db.users.find_one({"token": token})
         if user:
             user_id = str(user.get('_id'))
-            lover = db.lovers.find_one({'userId': ObjectId(user_id)})
+            lover = db.lovers.find_one({'userId': user_id})
             if lover:
                 return add_headers(jsonify(lover))
         return add_headers(jsonify({"status": "KO"}))
