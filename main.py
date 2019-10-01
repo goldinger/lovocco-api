@@ -106,6 +106,8 @@ def my_profile():
         db = get_db()
         args = dict(request.args)
         token = args.get('token')
+        if type(token) is list and len(token) == 1:
+            token = token[0]
         if token is None:
             return add_headers(jsonify({"status": 'KO', 'message': 'token not specified'}))
         user = db.users.find_one({"token": token})
