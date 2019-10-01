@@ -81,7 +81,7 @@ def register():
         token = hashlib.sha256((email + password + str(random.randint(1, 9999))).encode('utf-8')).hexdigest()
         result = db.users.insert_one({"email": email, "password": password, "token": token, "createdAt": datetime.now()})
         user_id = result.inserted_id
-        db.lovers.insert_one({"userId": user_id, "configured": False})
+        db.lovers.insert_one({"userId": str(user_id), "configured": False})
         return add_headers(jsonify({"status": "OK", "token": token}))
 
 
@@ -111,7 +111,7 @@ def my_profile():
         user = db.users.find_one({"token": token})
         if user:
             user_id = str(user.get('_id'))
-            lover = db.lovers.find_one({'userId': user_id})
+            lover = db.lovers.find_one({'userId': ObjectId(user_id)})
             if lover:
                 return add_headers(jsonify(lover))
         return add_headers(jsonify({"status": "KO"}))
