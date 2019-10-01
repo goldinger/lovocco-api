@@ -107,14 +107,14 @@ def my_profile():
         args = dict(request.args)
         token = args.get('token')
         if token is None:
-            return add_headers(jsonify({"status": 'KO'}))
+            return add_headers(jsonify({"status": 'KO', 'message': 'token not specified'}))
         user = db.users.find_one({"token": token})
         if user:
             user_id = str(user.get('_id'))
             lover = db.lovers.find_one({'userId': user_id})
             if lover:
                 return add_headers(jsonify(lover))
-        return add_headers(jsonify({"status": "KO"}))
+        return add_headers(jsonify({"status": "KO", 'message': 'no user found'}))
 
 
 if __name__ == "__main__":
