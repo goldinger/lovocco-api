@@ -100,7 +100,7 @@ def authenticate():
         return add_headers(jsonify({"token": result.get('token')}))
 
 
-@app.route("/myProfile", methods=['GET'])
+@app.route("/myProfile", methods=['GET', 'POST'])
 def my_profile():
     if request.method == 'GET':
         db = get_db()
@@ -117,6 +117,26 @@ def my_profile():
             if lover:
                 return add_headers(jsonify(lover))
         return add_headers(jsonify({"status": "KO", 'message': 'no user found'}))
+    elif request.method == 'POST':
+        db = get_db()
+        args = dict(request.args)
+        token = args.get('token')
+        if type(token) is list and len(token) == 1:
+            token = token[0]
+        if token is None:
+            return add_headers(jsonify({"status": 'KO', 'message': 'token not specified'}))
+        user = db.users.find_one({"token": token})
+        if user:
+            user_id = str(user.get('_id'))
+            body = dict(request.get_json(force=True))
+            body['configured'] = True
+            result = db.lovers.find_one_and_update({'userId': user_id}, {'$set': body})
+            if result is None:
+                return add_headers(jsonify({"status": "KO"}))
+            print(result)
+            return add_headers(jsonify({"status": "OK"}))
+        return add_headers(jsonify({"status": "KO", "message": "user not found"}))
+
 
 
 if __name__ == "__main__":
