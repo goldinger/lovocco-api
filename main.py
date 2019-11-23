@@ -133,10 +133,34 @@ def my_profile():
             result = db.lovers.find_one_and_update({'userId': user_id}, {'$set': body})
             if result is None:
                 return add_headers(jsonify({"status": "KO"}))
-            print(result)
             return add_headers(jsonify({"status": "OK"}))
         return add_headers(jsonify({"status": "KO", "message": "user not found"}))
 
+
+@app.route("/getCandidates", methods=['GET'])
+def lovers():
+    if request.method == 'GET':
+        db = get_db()
+        args = dict(request.args)
+        token = args.get('token')
+        if type(token) is list and len(token) == 1:
+            token = token[0]
+        if token is None:
+            return add_headers(jsonify({"status": 'KO', 'message': 'token not specified'}))
+        user = db.users.find_one({"token": token})
+        if user:
+            user_id = str(user.get('_id'))
+            lover = db.lovers.find_one({'userId': user_id})
+            if lover:
+                response = [
+                    { "id": "1", "name": "Amine", "age": 25 },
+                    { "id": "2", "name": "chaimae", "age": 22 },
+                    { "id": "3", "name": "adil", "age": 32 },
+                    { "id": "4", "name": "hamid", "age": 28 },
+                    { "id": "5", "name": "mostafa", "age": 25 },
+                ]
+                return add_headers(jsonify(response))
+        return add_headers(jsonify({"status": "KO", 'message': 'no user found'}))
 
 
 if __name__ == "__main__":
